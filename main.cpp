@@ -20,6 +20,12 @@ unsigned int compileShader(GLenum type, const char* source); //Uzima kod u fajlu
 unsigned int createShader(const char* vsSource, const char* fsSource); //Pravi objedinjeni sejder program koji se sastoji od Vertex sejdera ciji je kod na putanji vsSource i Fragment sejdera na putanji fsSource
 static unsigned loadImageToTexture(const char* filePath);
 
+enum BUTTON_STATE {
+    CREATED,
+    PRESSED,
+
+};
+
 int main(void)
 {
     if (!glfwInit())
@@ -55,10 +61,14 @@ int main(void)
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROMJENLJIVE I BAFERI +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    unsigned int VAO[2];
-    glGenVertexArrays(2, VAO);
-    unsigned int VBO[2];
-    glGenBuffers(2, VBO);
+    unsigned int VAO[3];
+    glGenVertexArrays(3, VAO);
+    unsigned int VBO[3];
+    glGenBuffers(3, VBO);
+
+    float yellow_r = 255 / 255.0;
+    float yellow_g = 255 / 255.0;
+    float yellow_b = 0 / 255.0;
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -82,8 +92,8 @@ int main(void)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    /*glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);*/
 
     unsigned checkerTexture = loadImageToTexture("res/name_texture.png");
     glBindTexture(GL_TEXTURE_2D, checkerTexture);
@@ -95,6 +105,7 @@ int main(void)
     glBindTexture(GL_TEXTURE_2D, 0);
     unsigned uTexLoc = glGetUniformLocation(nameAndSurnameShader, "uTex");
     glUniform1i(uTexLoc, 0);
+
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -126,14 +137,50 @@ int main(void)
     glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
     bool colorUpdated = false;
 
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ FRAMES +++++++++++++++++++++++++++++++++++++++++++++++++
+
+    float stripVertices[] = {
+        0.8, 0.8,     yellow_r, yellow_g, yellow_b,
+        0.75, 0.75,      yellow_r, yellow_g, yellow_b,
+        0.8, 0.1,     yellow_r, yellow_g, yellow_b,
+        0.75, 0.15,    yellow_r, yellow_g, yellow_b,
+        0.3, 0.1,    yellow_r, yellow_g, yellow_b,
+        0.35, 0.15,     yellow_r, yellow_g, yellow_b,
+        0.3, 0.8,     yellow_r, yellow_g, yellow_b,
+         0.35, 0.75,      yellow_r, yellow_g, yellow_b,
+        0.8, 0.8,      yellow_r, yellow_g, yellow_b,
+        0.75, 0.75,      yellow_r, yellow_g, yellow_b,
+    };
+
+    unsigned int stripStride = 5 * sizeof(float);
+
+    glBindVertexArray(VAO[2]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(stripVertices), stripVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stripStride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stripStride, (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
     glClearColor(0.8, 0.8, 0.8, 1.0);
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
 
     while (!glfwWindowShouldClose(window)) //Beskonacna petlja iz koje izlazimo tek kada prozor treba da se zatvori
     {
+        glfwPollEvents();
+
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             glfwSetWindowShouldClose(window, GL_TRUE);
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            colorUpdated = true;
+        }
+        if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+            colorUpdated = false;
         }
 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -149,35 +196,42 @@ int main(void)
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         glBindTexture(GL_TEXTURE_2D, 0);
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON COLOR CHANGE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glUseProgram(buttonShader);
         glBindVertexArray(VAO[1]);
         glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(circle) / (2 * sizeof(float)));
 
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON COLOR CHANGE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
         if (!colorUpdated) {
             glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glClearColor(0.8, 0.8, 0.8, 1.0);
         }
         else {
             glUniform4f(uColorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
             glClearColor(0.3, 0.3, 0.3, 1.0);
-        }
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }        
 
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            colorUpdated = true;
-        }
-        if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-            colorUpdated = false;
-        }
+        glBindVertexArray(VAO[2]);
+        /*if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        }*/
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(stripVertices) / stripStride);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        glUseProgram(0);
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
 
-    glDeleteBuffers(2, VBO);
+    glDeleteBuffers(3, VBO);
     glDeleteTextures(1, &checkerTexture);
-    glDeleteVertexArrays(2, VAO);
+    glDeleteVertexArrays(3, VAO);
     glDeleteProgram(nameAndSurnameShader);
     glDeleteProgram(buttonShader);
     glfwTerminate();
@@ -288,7 +342,6 @@ static unsigned loadImageToTexture(const char* filePath) {
         glBindTexture(GL_TEXTURE_2D, Texture);
         glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, TextureWidth, TextureHeight, 0, InternalFormat, GL_UNSIGNED_BYTE, ImageData);
         glBindTexture(GL_TEXTURE_2D, 0);
-        // oslobadjanje memorije zauzete sa stbi_load posto vise nije potrebna
         stbi_image_free(ImageData);
         return Texture;
     }
