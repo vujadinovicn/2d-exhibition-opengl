@@ -11,47 +11,43 @@
 #include <GL/glew.h>   //Omogucava upotrebu OpenGL naredbi
 #include <GLFW/glfw3.h>//Olaksava pravljenje i otvaranje prozora (konteksta) sa OpenGL sadrzajem
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #define CRES 30 // Circle Resolution = Rezolucija kruga
 
 unsigned int compileShader(GLenum type, const char* source); //Uzima kod u fajlu na putanji "source", kompajlira ga i vraca sejder tipa "type"
 unsigned int createShader(const char* vsSource, const char* fsSource); //Pravi objedinjeni sejder program koji se sastoji od Vertex sejdera ciji je kod na putanji vsSource i Fragment sejdera na putanji fsSource
+static unsigned loadImageToTexture(const char* filePath);
 
 int main(void)
 {
-
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ INICIJALIZACIJA ++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    // Pokretanje GLFW biblioteke
-    // Nju koristimo za stvaranje okvira prozora
-    if (!glfwInit()) // !0 == 1  | glfwInit inicijalizuje GLFW i vrati 1 ako je inicijalizovana uspjesno, a 0 ako nije
+    if (!glfwInit())
     {
         std::cout<<"GLFW Biblioteka se nije ucitala! :(\n";
         return 1;
     }
 
-    //Odredjivanje OpenGL verzije i profila (3.3, programabilni pajplajn)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //Stvaranje prozora
-    GLFWwindow* window; //Mjesto u memoriji za prozor
+    GLFWwindow* window; 
     unsigned int wWidth = 800;
     unsigned int wHeight = 800;
-    const char wTitle[] = "[Generic Title]";
-    window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL); // Napravi novi prozor
-    // glfwCreateWindow( sirina, visina, naslov, monitor na koji ovaj prozor ide preko citavog ekrana (u tom slucaju umjesto NULL ide glfwGetPrimaryMonitor() ), i prozori sa kojima ce dijeliti resurse )
-    if (window == NULL) //Ako prozor nije napravljen
+    const char wTitle[] = "Exhibition at Louvre";
+    window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL);
+
+    if (window == NULL)
     {
         std::cout << "Prozor nije napravljen! :(\n";
-        glfwTerminate(); //Gasi GLFW
-        return 2; //Vrati kod za gresku
+        glfwTerminate();
+        return 2;
     }
-    // Postavljanje novopecenog prozora kao aktivni (sa kojim cemo da radimo)
+
     glfwMakeContextCurrent(window);
 
-    // Inicijalizacija GLEW biblioteke
-    if (glewInit() != GLEW_OK) //Slicno kao glfwInit. GLEW_OK je predefinisani kod za uspjesnu inicijalizaciju sadrzan unutar biblioteke
+    if (glewInit() != GLEW_OK)
     {
         std::cout << "GLEW nije mogao da se ucita! :'(\n";
         return 3;
@@ -59,57 +55,62 @@ int main(void)
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROMJENLJIVE I BAFERI +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    unsigned int unifiedShader = createShader("basic.vert", "basic.frag"); // Napravi objedinjeni sejder program
-
-    float vertices[] = //Tjemena trougla koja sadrze sve informacije o njemu
-    {
-        //Podaci su poredani za nasu citkivost - racunar ne vidi ni razmake ni redove.
-        //Moramo mu naknadno reci kako da intepretira ove podatke
-
-        //Pozicija    |    Boja
-        //X    Y       R    G    B    A
-        0.25, 0.0,    1.0, 0.0, 0.0, 0.0, //prvo tjeme
-        -0.25, 0.0,   0.0, 0.0, 1.0, 0.0, //drugo tjeme
-        0.0, -0.5,     1.0, 1.0, 0.0, 0.0 //trece tjeme
-    };
-    unsigned int stride = (2 + 4) * sizeof(float); //Korak pri kretanju po podacima o tjemenima = Koliko mjesta u memoriji izmedju istih komponenti susjednih tjemena
-    //U nasem slucaju XY (2) + RGBA (4) = 6
-
-    //Vertex Array Object - Kontejner za VBO i pokazivace na njihove atribute
     unsigned int VAO[2];
-    glGenVertexArrays(2, VAO); //Generisi 1 kontejner na adresi od promjenljive "VAO"
-    glBindVertexArray(VAO[0]); //Povezi VAO za aktivni kontekst - Sve sto radimo ispod ovoga ce se odnositi na kontejner "VAO"
-
-    //Vertex Buffer Object - Nase figure koje crtamo
+    glGenVertexArrays(2, VAO);
     unsigned int VBO[2];
-    glGenBuffers(2, VBO); //Generisi 1 bafer sa adresom promjenljive "VBO" 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]); //Povezi "VBO" za aktivni Array Buffer (on se koristi za VBO-eve)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //Objasni gdje su podaci i za koji bafer
-    //glBufferData(koji bafer, koliko podataka ima, adresa podataka, tip iscrtavanja (GL_STATIC_DRAW, GL_DYNAMIC_DRAW, GL_STREAM_DRAW; optimizacioni parametar)
+    glGenBuffers(2, VBO);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0); //Objasni da su prva dva broja u tjemenu jedan atribut (u ovom slucaju pozicija)
-    //glVertexAttribPointer(indeks pokazivaca, broj komponenti atributa, tip komponenti atributa, da li je potrebno normalizovati podatke (nama uvijek GL_FALSE), korak da bi dosao do iste komponente narednog tjemena, pomjeraj sa pocetka jednog tjemena do komponente za ovaj atribut - mora biti (void*))  
-    glEnableVertexAttribArray(0); //Aktiviraj taj pokazivac i tako intepretiraj podatke
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float))); //Objasni da su preostala cetiri broja boja (preskacemo preko XY od pozicije, pa je pomjeraj 2 * sizeof(float))
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE +++++++++++++++++++++++++++++++++++++++++++++++++
+
+    unsigned int nameAndSurnameShader = createShader("basic_texture.vert", "basic_texture.frag"); 
+
+    float vertices[] =
+    {   //X    Y      S    T 
+        -0.25, 0.0,  0.0, 0.0,
+        0.25, 0.0,   1.0, 0.0,
+        -0.25, 0.2,    0.0, 1.0,
+        0.25, 0.2,    1.0, 1.0,//trece tjeme
+    };
+    unsigned int nameTextureStride = (2 + 2) * sizeof(float); 
+
+    glBindVertexArray(VAO[0]); 
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); 
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)0);
+    glEnableVertexAttribArray(0); 
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    //Postavili smo sta treba, pa te stvari iskljucujemo, da se naknadna podesavanja ne bi odnosila na njih i nesto poremetila
-    //To radimo tako sto bindujemo 0, pa kada treba da nacrtamo nase stvari, samo ih ponovo bindujemo
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    unsigned checkerTexture = loadImageToTexture("res/name_texture.png");
+    glBindTexture(GL_TEXTURE_2D, checkerTexture);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    unsigned uTexLoc = glGetUniformLocation(nameAndSurnameShader, "uTex");
+    glUniform1i(uTexLoc, 0);
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON +++++++++++++++++++++++++++++++++++++++++++++++++
 
     unsigned int buttonShader = createShader("basic.vert", "uniform_color.frag");
 
-    float circle[CRES * 2 + 4]; // +4 je za x i y koordinate centra kruga, i za x i y od nultog ugla
-    float r = 0.025; //poluprecnik
+    float circle[CRES * 2 + 4];
+    float r = 0.025;
 
-    circle[0] = 0; //Centar X0
-    circle[1] = 0; //Centar Y0
+    circle[0] = -0.5;
+    circle[1] = -0.5;
     int i;
     for (i = 0; i <= CRES; i++)
     {
 
-        circle[2 + 2 * i] = r * cos((3.141592 / 180) * (i * 360 / CRES)); //Xi
-        circle[2 + 2 * i + 1] = r * sin((3.141592 / 180) * (i * 360 / CRES)); //Yi
+        circle[2 + 2 * i] = circle[0] + r * cos((3.141592 / 180) * (i * 360 / CRES));
+        circle[2 + 2 * i + 1] = circle[1] + r * sin((3.141592 / 180) * (i * 360 / CRES)) * (wWidth / wHeight);
     }
 
     glBindVertexArray(VAO[1]);
@@ -120,70 +121,67 @@ int main(void)
 
     unsigned int uColorLoc = glGetUniformLocation(buttonShader, "color");
     if (uColorLoc == -1) {
-        // Handle error - unable to find the uniform location
         std::cerr << "Error: Unable to find the uniform location for 'color'" << std::endl;
     }
     glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
-    glBindVertexArray(0);
     bool colorUpdated = false;
 
+    glClearColor(0.8, 0.8, 0.8, 1.0);
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
 
     while (!glfwWindowShouldClose(window)) //Beskonacna petlja iz koje izlazimo tek kada prozor treba da se zatvori
     {
-        //Unos od korisnika bez callback funckcije. GLFW_PRESS = Dugme je trenutno pritisnuto. GLFW_RELEASE = Dugme trenutno nije pritisnuto
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
 
-        //Brisanje ekrana
-        glClearColor(0.8, 0.8, 0.8, 1.0); //Podesavanje boje pozadine: RGBA (R - Crvena, G - Zelena, B - Plava, A = neprovidno; Opseg od 0 do 1, gdje je 0 crno a 1 svijetlo)
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // [KOD ZA CRTANJE]
-        glUseProgram(unifiedShader); //Izaberi novopeceni sejder program za crtanje i koristi ga za svo naknadno crtanje (Ukoliko ne aktiviramo neke druge sejder programe)
-        glBindVertexArray(VAO[0]); //Izaberemo sta zelimo da crtamo
-        glDrawArrays(GL_TRIANGLES, 0, 3); //To i nacrtamo
-        //glDrawArrays(tip primitive, indeks pocetnog tjemena, koliko narednih tjemena crtamo);
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        glUseProgram(nameAndSurnameShader);
+        glBindVertexArray(VAO[0]);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, checkerTexture);
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         glUseProgram(buttonShader);
         glBindVertexArray(VAO[1]);
         glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(circle) / (2 * sizeof(float)));
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON COLOR CHANGE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         if (!colorUpdated) {
             glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
+            glClearColor(0.8, 0.8, 0.8, 1.0);
         }
         else {
             glUniform4f(uColorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
+            glClearColor(0.3, 0.3, 0.3, 1.0);
         }
 
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            
             colorUpdated = true;
         }
         if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
             colorUpdated = false;
         }
 
-
-
-        //Zamjena vidljivog bafera sa pozadinskim
         glfwSwapBuffers(window);
-
-        //Hvatanje dogadjaja koji se ticu okvira prozora (promjena velicine, pomjeranje itd)
         glfwPollEvents();
     }
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ POSPREMANJE +++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-    //Brisanje bafera i sejdera
     glDeleteBuffers(2, VBO);
+    glDeleteTextures(1, &checkerTexture);
     glDeleteVertexArrays(2, VAO);
-    glDeleteProgram(unifiedShader);
-    //Sve OK - batali program
+    glDeleteProgram(nameAndSurnameShader);
+    glDeleteProgram(buttonShader);
     glfwTerminate();
+
     return 0;
 }
 
@@ -264,4 +262,40 @@ unsigned int createShader(const char* vsSource, const char* fsSource)
     glDeleteShader(fragmentShader);
 
     return program;
+}
+
+static unsigned loadImageToTexture(const char* filePath) {
+    int TextureWidth;
+    int TextureHeight;
+    int TextureChannels;
+    unsigned char* ImageData = stbi_load(filePath, &TextureWidth, &TextureHeight, &TextureChannels, 0);
+    if (ImageData != NULL)
+    {
+        //Slike se osnovno ucitavaju naopako pa se moraju ispraviti da budu uspravne
+        stbi__vertical_flip(ImageData, TextureWidth, TextureHeight, TextureChannels);
+
+        // Provjerava koji je format boja ucitane slike
+        GLint InternalFormat = -1;
+        switch (TextureChannels) {
+        case 1: InternalFormat = GL_RED; break;
+        case 3: InternalFormat = GL_RGB; break;
+        case 4: InternalFormat = GL_RGBA; break;
+        default: InternalFormat = GL_RGB; break;
+        }
+
+        unsigned int Texture;
+        glGenTextures(1, &Texture);
+        glBindTexture(GL_TEXTURE_2D, Texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, InternalFormat, TextureWidth, TextureHeight, 0, InternalFormat, GL_UNSIGNED_BYTE, ImageData);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        // oslobadjanje memorije zauzete sa stbi_load posto vise nije potrebna
+        stbi_image_free(ImageData);
+        return Texture;
+    }
+    else
+    {
+        std::cout << "Textura nije ucitana! Putanja texture: " << filePath << std::endl;
+        stbi_image_free(ImageData);
+        return 0;
+    }
 }
