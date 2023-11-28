@@ -20,11 +20,6 @@ unsigned int compileShader(GLenum type, const char* source); //Uzima kod u fajlu
 unsigned int createShader(const char* vsSource, const char* fsSource); //Pravi objedinjeni sejder program koji se sastoji od Vertex sejdera ciji je kod na putanji vsSource i Fragment sejdera na putanji fsSource
 static unsigned loadImageToTexture(const char* filePath);
 
-enum BUTTON_STATE {
-    CREATED,
-    PRESSED,
-
-};
 
 int main(void)
 {
@@ -61,14 +56,26 @@ int main(void)
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROMJENLJIVE I BAFERI +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    unsigned int VAO[3];
-    glGenVertexArrays(3, VAO);
-    unsigned int VBO[3];
-    glGenBuffers(3, VBO);
+    unsigned int VAO[6];
+    glGenVertexArrays(6, VAO);
+    unsigned int VBO[6];
+    glGenBuffers(6, VBO);
 
     float yellow_r = 255 / 255.0;
     float yellow_g = 255 / 255.0;
     float yellow_b = 0 / 255.0;
+
+    float red_r = 255 / 255.0;
+    float red_g = 0 / 255.0;
+    float red_b = 0 / 255.0;
+
+    float purple_r = 255 / 255.0;
+    float purple_g = 0 / 255.0;
+    float purple_b = 255 / 255.0;
+
+    float blue_r = 0 / 255.0;
+    float blue_g = 0 / 255.0;
+    float blue_b = 255 / 255.0;
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -76,10 +83,10 @@ int main(void)
 
     float vertices[] =
     {   //X    Y      S    T 
-        -0.25, 0.0,  0.0, 0.0,
-        0.25, 0.0,   1.0, 0.0,
-        -0.25, 0.2,    0.0, 1.0,
-        0.25, 0.2,    1.0, 1.0,//trece tjeme
+        -0.2, -0.55,  0.0, 0.0,
+        0.2, -0.55,   1.0, 0.0,
+        -0.2, -0.4,    0.0, 1.0,
+        0.2, -0.4,    1.0, 1.0,//trece tjeme
     };
     unsigned int nameTextureStride = (2 + 2) * sizeof(float); 
 
@@ -110,18 +117,19 @@ int main(void)
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON +++++++++++++++++++++++++++++++++++++++++++++++++
 
     unsigned int buttonShader = createShader("basic.vert", "uniform_color.frag");
+    unsigned int basicShader = createShader("basic.vert", "basic.frag");
 
     float circle[CRES * 2 + 4];
-    float r = 0.025;
+    float r = 0.08;
 
-    circle[0] = -0.5;
-    circle[1] = -0.5;
+    circle[0] = 0.0;
+    circle[1] = 0.0;
     int i;
     for (i = 0; i <= CRES; i++)
     {
 
         circle[2 + 2 * i] = circle[0] + r * cos((3.141592 / 180) * (i * 360 / CRES));
-        circle[2 + 2 * i + 1] = circle[1] + r * sin((3.141592 / 180) * (i * 360 / CRES)) * (wWidth / wHeight);
+        circle[2 + 2 * i + 1] = circle[1] + r * sin((3.141592 / 180) * (i * 360 / CRES)) * ((float)wWidth / (int)wHeight);
     }
 
     glBindVertexArray(VAO[1]);
@@ -139,31 +147,109 @@ int main(void)
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ FRAMES +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    float stripVertices[] = {
-        0.8, 0.8,     yellow_r, yellow_g, yellow_b,
-        0.75, 0.75,      yellow_r, yellow_g, yellow_b,
-        0.8, 0.1,     yellow_r, yellow_g, yellow_b,
-        0.75, 0.15,    yellow_r, yellow_g, yellow_b,
-        0.3, 0.1,    yellow_r, yellow_g, yellow_b,
-        0.35, 0.15,     yellow_r, yellow_g, yellow_b,
-        0.3, 0.8,     yellow_r, yellow_g, yellow_b,
-         0.35, 0.75,      yellow_r, yellow_g, yellow_b,
-        0.8, 0.8,      yellow_r, yellow_g, yellow_b,
-        0.75, 0.75,      yellow_r, yellow_g, yellow_b,
-    };
+    unsigned int frameStride = 5 * sizeof(float);
 
-    unsigned int stripStride = 5 * sizeof(float);
+    float yellowFrameVertices[] = {
+        0.55, 0.7,     yellow_r, yellow_g, yellow_b,
+       0.5, 0.65,      yellow_r, yellow_g, yellow_b,
+       0.55, -0.7,     yellow_r, yellow_g, yellow_b,
+       0.5, -0.65,   yellow_r, yellow_g, yellow_b,
+       -0.25, -0.7,    yellow_r, yellow_g, yellow_b,
+       -0.2, -0.65,     yellow_r, yellow_g, yellow_b,
+       -0.25, 0.7,     yellow_r, yellow_g, yellow_b,
+        -0.2, 0.65,      yellow_r, yellow_g, yellow_b,
+       0.55, 0.7,      yellow_r, yellow_g, yellow_b,
+       0.5, 0.65,      yellow_r, yellow_g, yellow_b
+    };
 
     glBindVertexArray(VAO[2]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(stripVertices), stripVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stripStride, (void*)0);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(yellowFrameVertices), yellowFrameVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stripStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    float redFrameVertices[] = {
+      /* 0.55, 0.8,     red_r, red_g, red_b,
+       0.5, 0.75,      red_r, red_g, red_b,
+       0.55, -0.6,     red_r, red_g, red_b,
+       0.5, -0.55,   red_r, red_g, red_b,
+       -0.25, -0.6,    red_r, red_g, red_b,
+       -0.2, -0.55,     red_r, red_g, red_b,
+       -0.25, 0.8,     red_r, red_g, red_b,
+        -0.2, 0.75,      red_r, red_g, red_b,
+       0.55, 0.8,      red_r, red_g, red_b,
+       0.5, 0.75,      red_r, red_g, red_b*/
+        0.55, 0.7,     red_r, red_g, red_b,
+       0.5, 0.65,      red_r, red_g, red_b,
+       0.55, -0.7,     red_r, red_g, red_b,
+       0.5, -0.65,   red_r, red_g, red_b,
+       -0.25, -0.7,   red_r, red_g, red_b,
+       -0.2, -0.65,     red_r, red_g, red_b,
+       -0.25, 0.7,     red_r, red_g, red_b,
+        -0.2, 0.65,      red_r, red_g, red_b,
+       0.55, 0.7,     red_r, red_g, red_b,
+       0.5, 0.65,      red_r, red_g, red_b,
+    };
+
+    glBindVertexArray(VAO[3]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[3]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(redFrameVertices), redFrameVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    float blueFrameVertices[] = {
+          0.25, 0.7,     blue_r, blue_g, blue_b,
+         0.2, 0.65,      blue_r, blue_g, blue_b,
+         0.25, -0.7,     blue_r, blue_g, blue_b,
+         0.2, -0.65,   blue_r, blue_g, blue_b,
+         -0.55, -0.7,   blue_r, blue_g, blue_b,
+         -0.5, -0.65,     blue_r, blue_g, blue_b,
+         -0.55, 0.7,     blue_r, blue_g, blue_b,
+          -0.5, 0.65,      blue_r, blue_g, blue_b,
+         0.25, 0.7,     blue_r, blue_g, blue_b,
+         0.2, 0.65,      blue_r, blue_g, blue_b,
+    };
+
+    glBindVertexArray(VAO[4]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[4]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(blueFrameVertices), blueFrameVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    float purpleFrameVertices[] = {
+          0.25, 0.7,     purple_r, purple_g, purple_b,
+         0.2, 0.65,      purple_r, purple_g, purple_b,
+         0.25, -0.7,     purple_r, purple_g, purple_b,
+         0.2, -0.65,   purple_r, purple_g, purple_b,
+         -0.55, -0.7,   purple_r, purple_g, purple_b,
+         -0.5, -0.65,     purple_r, purple_g, purple_b,
+         -0.55, 0.7,     purple_r, purple_g, purple_b,
+          -0.5, 0.65,      purple_r, purple_g, purple_b,
+         0.25, 0.7,     purple_r, purple_g, purple_b,
+         0.2, 0.65,      purple_r, purple_g, purple_b,
+    };
+
+    glBindVertexArray(VAO[5]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[5]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(purpleFrameVertices), purpleFrameVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    /*glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);*/
+
+    unsigned int rotationShader = createShader("frame_rotation.vert", "frame_rotation.frag");
+    unsigned int uPosLoc = glGetUniformLocation(rotationShader, "uPos");
+    float rrr = 0.1;      //Poluprecnik kruznice po kojoj se trougao krece, mora biti manji od najmanje apsolutne vrednosti y koordinate temena
+    float rotationSpeed = 0.7;
 
     glClearColor(0.8, 0.8, 0.8, 1.0);
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -171,6 +257,7 @@ int main(void)
     while (!glfwWindowShouldClose(window)) //Beskonacna petlja iz koje izlazimo tek kada prozor treba da se zatvori
     {
         glfwPollEvents();
+        glViewport(0, 0, wWidth, wHeight);
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         {
@@ -213,25 +300,40 @@ int main(void)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }        
 
+        glUseProgram(rotationShader);
+
+        glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
         glBindVertexArray(VAO[2]);
-        /*if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        glUniform2f(uPosLoc, 0.15 * cos(glfwGetTime() * rotationSpeed), 0.15 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
 
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[3]);
+        glUniform2f(uPosLoc, 0.15* cos(glfwGetTime()* rotationSpeed), 0.15* (sin(glfwGetTime()* rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(redFrameVertices) / frameStride);
 
-        }*/
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(stripVertices) / stripStride);
+        glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[4]);
+        glUniform2f(uPosLoc, 0.15 * cos(glfwGetTime() * rotationSpeed), 0.15 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
+
+        glViewport(0, 0, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[5]);
+        glUniform2f(uPosLoc, 0.15 * cos(glfwGetTime() * rotationSpeed), 0.15 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(redFrameVertices) / frameStride);
+
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        /*glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-        glUseProgram(0);
+        glUseProgram(0);*/
 
         glfwSwapBuffers(window);
     }
 
-    glDeleteBuffers(3, VBO);
+    glDeleteBuffers(6, VBO);
     glDeleteTextures(1, &checkerTexture);
-    glDeleteVertexArrays(3, VAO);
+    glDeleteVertexArrays(6, VAO);
     glDeleteProgram(nameAndSurnameShader);
     glDeleteProgram(buttonShader);
     glfwTerminate();
