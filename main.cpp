@@ -11,6 +11,8 @@
 #include <GL/glew.h>   //Omogucava upotrebu OpenGL naredbi
 #include <GLFW/glfw3.h>//Olaksava pravljenje i otvaranje prozora (konteksta) sa OpenGL sadrzajem
 
+#define CRES 30 // Circle Resolution = Rezolucija kruga
+
 unsigned int compileShader(GLenum type, const char* source); //Uzima kod u fajlu na putanji "source", kompajlira ga i vraca sejder tipa "type"
 unsigned int createShader(const char* vsSource, const char* fsSource); //Pravi objedinjeni sejder program koji se sastoji od Vertex sejdera ciji je kod na putanji vsSource i Fragment sejdera na putanji fsSource
 
@@ -34,8 +36,8 @@ int main(void)
 
     //Stvaranje prozora
     GLFWwindow* window; //Mjesto u memoriji za prozor
-    unsigned int wWidth = 500;
-    unsigned int wHeight = 500;
+    unsigned int wWidth = 800;
+    unsigned int wHeight = 800;
     const char wTitle[] = "[Generic Title]";
     window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL); // Napravi novi prozor
     // glfwCreateWindow( sirina, visina, naslov, monitor na koji ovaj prozor ide preko citavog ekrana (u tom slucaju umjesto NULL ide glfwGetPrimaryMonitor() ), i prozori sa kojima ce dijeliti resurse )
@@ -74,14 +76,14 @@ int main(void)
     //U nasem slucaju XY (2) + RGBA (4) = 6
 
     //Vertex Array Object - Kontejner za VBO i pokazivace na njihove atribute
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO); //Generisi 1 kontejner na adresi od promjenljive "VAO"
-    glBindVertexArray(VAO); //Povezi VAO za aktivni kontekst - Sve sto radimo ispod ovoga ce se odnositi na kontejner "VAO"
+    unsigned int VAO[2];
+    glGenVertexArrays(2, VAO); //Generisi 1 kontejner na adresi od promjenljive "VAO"
+    glBindVertexArray(VAO[0]); //Povezi VAO za aktivni kontekst - Sve sto radimo ispod ovoga ce se odnositi na kontejner "VAO"
 
     //Vertex Buffer Object - Nase figure koje crtamo
-    unsigned int VBO;
-    glGenBuffers(1, &VBO); //Generisi 1 bafer sa adresom promjenljive "VBO" 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); //Povezi "VBO" za aktivni Array Buffer (on se koristi za VBO-eve)
+    unsigned int VBO[2];
+    glGenBuffers(2, VBO); //Generisi 1 bafer sa adresom promjenljive "VBO" 
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]); //Povezi "VBO" za aktivni Array Buffer (on se koristi za VBO-eve)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //Objasni gdje su podaci i za koji bafer
     //glBufferData(koji bafer, koliko podataka ima, adresa podataka, tip iscrtavanja (GL_STATIC_DRAW, GL_DYNAMIC_DRAW, GL_STREAM_DRAW; optimizacioni parametar)
 
@@ -94,8 +96,36 @@ int main(void)
     //Postavili smo sta treba, pa te stvari iskljucujemo, da se naknadna podesavanja ne bi odnosila na njih i nesto poremetila
     //To radimo tako sto bindujemo 0, pa kada treba da nacrtamo nase stvari, samo ih ponovo bindujemo
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    unsigned int buttonShader = createShader("basic.vert", "uniform_color.frag");
+
+    float circle[CRES * 2 + 4]; // +4 je za x i y koordinate centra kruga, i za x i y od nultog ugla
+    float r = 0.025; //poluprecnik
+
+    circle[0] = 0; //Centar X0
+    circle[1] = 0; //Centar Y0
+    int i;
+    for (i = 0; i <= CRES; i++)
+    {
+
+        circle[2 + 2 * i] = r * cos((3.141592 / 180) * (i * 360 / CRES)); //Xi
+        circle[2 + 2 * i + 1] = r * sin((3.141592 / 180) * (i * 360 / CRES)); //Yi
+    }
+
+    glBindVertexArray(VAO[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(circle), circle, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    unsigned int uColorLoc = glGetUniformLocation(buttonShader, "color");
+    if (uColorLoc == -1) {
+        // Handle error - unable to find the uniform location
+        std::cerr << "Error: Unable to find the uniform location for 'color'" << std::endl;
+    }
+    glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
     glBindVertexArray(0);
-    
+    bool colorUpdated = false;
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -106,15 +136,37 @@ int main(void)
         {
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
+
         //Brisanje ekrana
-        glClearColor(0.5, 0.5, 0.5, 1.0); //Podesavanje boje pozadine: RGBA (R - Crvena, G - Zelena, B - Plava, A = neprovidno; Opseg od 0 do 1, gdje je 0 crno a 1 svijetlo)
+        glClearColor(0.8, 0.8, 0.8, 1.0); //Podesavanje boje pozadine: RGBA (R - Crvena, G - Zelena, B - Plava, A = neprovidno; Opseg od 0 do 1, gdje je 0 crno a 1 svijetlo)
         glClear(GL_COLOR_BUFFER_BIT);
 
         // [KOD ZA CRTANJE]
         glUseProgram(unifiedShader); //Izaberi novopeceni sejder program za crtanje i koristi ga za svo naknadno crtanje (Ukoliko ne aktiviramo neke druge sejder programe)
-        glBindVertexArray(VAO); //Izaberemo sta zelimo da crtamo
+        glBindVertexArray(VAO[0]); //Izaberemo sta zelimo da crtamo
         glDrawArrays(GL_TRIANGLES, 0, 3); //To i nacrtamo
         //glDrawArrays(tip primitive, indeks pocetnog tjemena, koliko narednih tjemena crtamo);
+
+        glUseProgram(buttonShader);
+        glBindVertexArray(VAO[1]);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(circle) / (2 * sizeof(float)));
+
+        if (!colorUpdated) {
+            glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
+        }
+        else {
+            glUniform4f(uColorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            
+            colorUpdated = true;
+        }
+        if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+            colorUpdated = false;
+        }
+
+
 
         //Zamjena vidljivog bafera sa pozadinskim
         glfwSwapBuffers(window);
@@ -127,8 +179,8 @@ int main(void)
 
 
     //Brisanje bafera i sejdera
-    glDeleteBuffers(1, &VBO);
-    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(2, VBO);
+    glDeleteVertexArrays(2, VAO);
     glDeleteProgram(unifiedShader);
     //Sve OK - batali program
     glfwTerminate();
