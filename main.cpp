@@ -56,10 +56,12 @@ int main(void)
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROMJENLJIVE I BAFERI +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    unsigned int VAO[10];
-    glGenVertexArrays(10, VAO);
-    unsigned int VBO[10];
-    glGenBuffers(10, VBO);
+    unsigned int VAO[12];
+    glGenVertexArrays(12, VAO);
+    unsigned int VBO[12];
+    glGenBuffers(12, VBO);
+
+    float white = 255 / 255.0;
 
     float yellow_r = 255 / 255.0;
     float yellow_g = 255 / 255.0;
@@ -76,6 +78,10 @@ int main(void)
     float blue_r = 0 / 255.0;
     float blue_g = 0 / 255.0;
     float blue_b = 255 / 255.0;
+    
+    float green_r = 128 / 255.0;
+    float green_g = 255 / 255.0;
+    float green_b = 128 / 255.0;
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -117,6 +123,48 @@ int main(void)
     glBindTexture(GL_TEXTURE_2D, 0);
     unsigned uTexLoc = glGetUniformLocation(nameAndSurnameShader, "uTex");
     /*glUniform1i(uTexLoc, 0);*/
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROGRESS +++++++++++++++++++++++++++++++++++++++++++++++++
+
+    unsigned int progressBarShader = createShader("basic.vert", "progress_bar.frag");
+
+    unsigned int stride = 5 * sizeof(float);
+
+    float progressBarOuterVertices[] = {
+        0.1, -0.76,     white, white, white,
+      -0.7, -0.76,      white, white, white,
+      0.1, -0.86,     white, white, white,
+      -0.7, -0.86,   white, white, white
+    };
+
+    glBindVertexArray(VAO[10]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[10]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(progressBarOuterVertices), progressBarOuterVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    float progressBarInnerVertices[] = {
+       -0.65, -0.84, green_r, green_g, green_b,
+       -0.65, -0.78, green_r, green_g, green_b,
+       -0.475, -0.84, green_r, green_g, green_b,
+       -0.475, -0.78, green_r, green_g, green_b,
+       -0.3, -0.84, green_r, green_g, green_b,
+       -0.3, -0.78, green_r, green_g, green_b,
+       -0.1275, -0.84, green_r, green_g, green_b,
+       -0.1275, -0.78, green_r, green_g, green_b,
+       0.05, -0.84, green_r, green_g, green_b,
+       0.05, -0.78, green_r, green_g, green_b,
+    };
+
+    glBindVertexArray(VAO[11]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[11]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(progressBarInnerVertices), progressBarInnerVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ MONA LISA +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -245,7 +293,7 @@ int main(void)
     float circle[CRES * 2 + 4];
     float r = 0.15;
 
-    circle[0] = -0.62;
+    circle[0] = -0.68;
     circle[1] = -0.62;
     int i;
     for (i = 0; i <= CRES; i++)
@@ -365,10 +413,14 @@ int main(void)
 
     unsigned int rotationShader = createShader("frame_rotation.vert", "frame_rotation.frag");
     unsigned int time = glGetUniformLocation(rotationShader, "time");
+    unsigned int timeProgress = glGetUniformLocation(progressBarShader, "time");
     unsigned int frameType = glGetUniformLocation(rotationShader, "type");
     unsigned int uPosLoc = glGetUniformLocation(rotationShader, "uPos");
     float rrr = 0.1;      //Poluprecnik kruznice po kojoj se trougao krece, mora biti manji od najmanje apsolutne vrednosti y koordinate temena
     float rotationSpeed = 0.7;
+    int progressLevel = 4;
+    bool zKeyPressed = false;
+    bool iKeyPressed = false;
 
     glClearColor(0.9, 0.9, 0.9, 1.0);
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
@@ -387,6 +439,21 @@ int main(void)
         }
         if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
             colorUpdated = false;
+        }
+        if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !zKeyPressed && progressLevel < 10) {
+            progressLevel += 2;
+            zKeyPressed = true;  // Set the flag to true to indicate that the key is pressed
+        }
+        else if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE) {
+            zKeyPressed = false;  // Reset the flag when the key is released
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && !iKeyPressed && progressLevel > 4) {
+            progressLevel -= 2;
+            iKeyPressed = true;  // Set the flag to true to indicate that the key is pressed
+        }
+        else if (glfwGetKey(window, GLFW_KEY_I) == GLFW_RELEASE) {
+            iKeyPressed = false;  // Reset the flag when the key is released
         }
 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -421,7 +488,19 @@ int main(void)
         glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(circle) / (2 * sizeof(float)));
 
         glUseProgram(nameAndSurnameShader);
+        glViewport(0, 0, wWidth, wHeight);
+        glBindVertexArray(VAO[10]);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        glUseProgram(progressBarShader);
+        float t = abs(sin(glfwGetTime()));
+        /*if (t < 0)
+            t = 0;*/
+        glUniform1f(timeProgress, t);
+        glBindVertexArray(VAO[11]);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, progressLevel);
+
+        glUseProgram(nameAndSurnameShader);
         glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
         glBindVertexArray(VAO[6]);
         glActiveTexture(GL_TEXTURE1);
@@ -511,9 +590,13 @@ int main(void)
     glDeleteTextures(1, &napoleonTexture);
     glDeleteTextures(1, &freedomTexture);
     glDeleteTextures(1, &medusaTexture);
+
+
     glDeleteVertexArrays(10, VAO);
     glDeleteProgram(nameAndSurnameShader);
     glDeleteProgram(buttonShader);
+    glDeleteProgram(progressBarShader);
+    glDeleteProgram(basicShader);
     glfwTerminate();
 
     return 0;

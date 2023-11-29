@@ -151,6 +151,7 @@
     <None Include="frame_rotation.frag" />
     <None Include="frame_rotation.vert" />
     <None Include="packages.config" />
+    <None Include="progress_bar.frag" />
     <None Include="uniform_color.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
