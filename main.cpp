@@ -167,7 +167,7 @@ int main(void)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned medusaTexture = loadImageToTexture("res/splav_meduze.jpg");
+    unsigned medusaTexture = loadImageToTexture("res/medusaa.jpg");
     glBindTexture(GL_TEXTURE_2D, medusaTexture);
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -196,7 +196,7 @@ int main(void)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned napoleonTexture = loadImageToTexture("res/krunisanje_napoleona.jpg");
+    unsigned napoleonTexture = loadImageToTexture("res/napoleon.jpg");
     glBindTexture(GL_TEXTURE_2D, napoleonTexture);
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -225,7 +225,7 @@ int main(void)
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned freedomTexture = loadImageToTexture("res/sloboda_vodi_narod.jpg");
+    unsigned freedomTexture = loadImageToTexture("res/liberty.jpg");
     glBindTexture(GL_TEXTURE_2D, freedomTexture);
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -364,6 +364,8 @@ int main(void)
     glBindVertexArray(0);*/
 
     unsigned int rotationShader = createShader("frame_rotation.vert", "frame_rotation.frag");
+    unsigned int time = glGetUniformLocation(rotationShader, "time");
+    unsigned int frameType = glGetUniformLocation(rotationShader, "type");
     unsigned int uPosLoc = glGetUniformLocation(rotationShader, "uPos");
     float rrr = 0.1;      //Poluprecnik kruznice po kojoj se trougao krece, mora biti manji od najmanje apsolutne vrednosti y koordinate temena
     float rotationSpeed = 0.7;
@@ -398,6 +400,7 @@ int main(void)
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, checkerTexture);
         glUniform1i(uTexLoc, 0);
+        glUniform2f(uPosLoc, 0, 0);
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         /*
@@ -405,10 +408,52 @@ int main(void)
 
         // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON COLOR CHANGE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+
         glUseProgram(buttonShader);
+        if (!colorUpdated) {
+            glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
+        }
+        else {
+            glUniform4f(uColorLoc, 0.0f, 0.0f, 0.0f, 1.0f);
+        }
         glBindVertexArray(VAO[1]);
         glViewport(0, 0, wWidth / 2, wHeight / 2);
         glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(circle) / (2 * sizeof(float)));
+
+        glUseProgram(nameAndSurnameShader);
+
+        glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[6]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, monaLisaTexture);
+        glUniform1i(uTexLoc, 1);
+        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[7]);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, medusaTexture);
+        glUniform1i(uTexLoc, 2);
+        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        glViewport(0, 0, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[9]);
+        glActiveTexture(GL_TEXTURE4);
+        glBindTexture(GL_TEXTURE_2D, freedomTexture);
+        glUniform1i(uTexLoc, 4);
+        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+        glBindVertexArray(VAO[8]);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, napoleonTexture);
+        glUniform1i(uTexLoc, 3);
+        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
 
         if (!colorUpdated) {
             glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
@@ -422,77 +467,31 @@ int main(void)
         }        
 
         glUseProgram(rotationShader);
+        glUniform1f(time, abs(sin(glfwGetTime())));
 
         glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
-
+        glUniform1f(frameType, 1);
         glBindVertexArray(VAO[2]);
         glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
 
-        glUseProgram(nameAndSurnameShader);
-        glBindVertexArray(VAO[6]);
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, monaLisaTexture);
-        glUniform1i(uTexLoc, 1);
-        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-        //glBindTexture(GL_TEXTURE_2D, 1);
-
-        
-        glUseProgram(rotationShader);
         glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
+        glUniform1f(frameType, 2);
         glBindVertexArray(VAO[3]);
         glUniform2f(uPosLoc, 0.2* cos(glfwGetTime()* rotationSpeed), 0.2* (sin(glfwGetTime()* rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(redFrameVertices) / frameStride);
 
-        glUseProgram(nameAndSurnameShader);
-        glBindVertexArray(VAO[7]);
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, medusaTexture);
-        glUniform1i(uTexLoc, 2);
-        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-
-        glUseProgram(rotationShader);
-
         glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
-        
         glBindVertexArray(VAO[4]);
+        glUniform1f(frameType, 3);
         glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
 
-        glUseProgram(nameAndSurnameShader);
-        glBindVertexArray(VAO[8]);
-
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, napoleonTexture);
-        glUniform1i(uTexLoc, 3);
-        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-        glUseProgram(rotationShader);
-
         glViewport(0, 0, wWidth / 2, wHeight / 2);
         glBindVertexArray(VAO[5]);
+        glUniform1f(frameType, 4);
         glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(blueFrameVertices) / frameStride);
-
-        glUseProgram(nameAndSurnameShader);
-        glBindVertexArray(VAO[9]);
-
-        glActiveTexture(GL_TEXTURE4);
-        glBindTexture(GL_TEXTURE_2D, freedomTexture);
-        glUniform1i(uTexLoc, 4);
-        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glActiveTexture(GL_TEXTURE0);
 
@@ -506,10 +505,13 @@ int main(void)
         glfwSwapBuffers(window);
     }
 
-    glDeleteBuffers(7, VBO);
+    glDeleteBuffers(10, VBO);
     glDeleteTextures(1, &checkerTexture);
     glDeleteTextures(1, &monaLisaTexture);
-    glDeleteVertexArrays(7, VAO);
+    glDeleteTextures(1, &napoleonTexture);
+    glDeleteTextures(1, &freedomTexture);
+    glDeleteTextures(1, &medusaTexture);
+    glDeleteVertexArrays(10, VAO);
     glDeleteProgram(nameAndSurnameShader);
     glDeleteProgram(buttonShader);
     glfwTerminate();
