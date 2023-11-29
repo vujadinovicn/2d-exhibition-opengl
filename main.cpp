@@ -37,7 +37,17 @@ int main(void)
     unsigned int wWidth = 800;
     unsigned int wHeight = 800;
     const char wTitle[] = "Exhibition at Louvre";
+    //window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+    // Calculate window position to center it on the monitor
+    int xPos = (mode->width - wWidth) / 2;
+    int yPos = (mode->height - wHeight) / 2;
+
+    // Create a window and set its position
     window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL);
+    glfwSetWindowPos(window, xPos, yPos);
 
     if (window == NULL)
     {
@@ -421,7 +431,7 @@ int main(void)
     int progressLevel = 4;
     bool zKeyPressed = false;
     bool iKeyPressed = false;
-
+    int isImageMoving = 1;
     glClearColor(0.9, 0.9, 0.9, 1.0);
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -436,12 +446,15 @@ int main(void)
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             colorUpdated = true;
+            isImageMoving = 0;
         }
         if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
             colorUpdated = false;
+            isImageMoving = 1;
         }
         if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !zKeyPressed && progressLevel < 10) {
             progressLevel += 2;
+            rotationSpeed += 0.5;
             zKeyPressed = true;  // Set the flag to true to indicate that the key is pressed
         }
         else if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE) {
@@ -450,6 +463,7 @@ int main(void)
 
         if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && !iKeyPressed && progressLevel > 4) {
             progressLevel -= 2;
+            rotationSpeed -= 0.5;
             iKeyPressed = true;  // Set the flag to true to indicate that the key is pressed
         }
         else if (glfwGetKey(window, GLFW_KEY_I) == GLFW_RELEASE) {
@@ -506,7 +520,7 @@ int main(void)
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, monaLisaTexture);
         glUniform1i(uTexLoc, 1);
-        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
@@ -514,7 +528,7 @@ int main(void)
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, medusaTexture);
         glUniform1i(uTexLoc, 2);
-        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.2 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.2 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glViewport(0, 0, wWidth / 2, wHeight / 2);
@@ -522,7 +536,7 @@ int main(void)
         glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_2D, freedomTexture);
         glUniform1i(uTexLoc, 4);
-        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
@@ -530,7 +544,7 @@ int main(void)
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, napoleonTexture);
         glUniform1i(uTexLoc, 3);
-        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.2 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.2 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 
@@ -551,25 +565,25 @@ int main(void)
         glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
         glUniform1f(frameType, 1);
         glBindVertexArray(VAO[2]);
-        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
 
         glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
         glUniform1f(frameType, 2);
         glBindVertexArray(VAO[3]);
-        glUniform2f(uPosLoc, 0.2* cos(glfwGetTime()* rotationSpeed), 0.2* (sin(glfwGetTime()* rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.2* cos(glfwGetTime()* rotationSpeed), isImageMoving * 0.2* (sin(glfwGetTime()* rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(redFrameVertices) / frameStride);
 
         glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
         glBindVertexArray(VAO[4]);
         glUniform1f(frameType, 3);
-        glUniform2f(uPosLoc, 0.2 * cos(glfwGetTime() * rotationSpeed), 0.2 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.2 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.2 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
 
         glViewport(0, 0, wWidth / 2, wHeight / 2);
         glBindVertexArray(VAO[5]);
         glUniform1f(frameType, 4);
-        glUniform2f(uPosLoc, 0.05 * cos(glfwGetTime() * rotationSpeed), 0.05 * (sin(glfwGetTime() * rotationSpeed)));
+        glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(blueFrameVertices) / frameStride);
 
         glActiveTexture(GL_TEXTURE0);
