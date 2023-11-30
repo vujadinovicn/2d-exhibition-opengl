@@ -37,21 +37,18 @@ int main(void)
     unsigned int wWidth = 800;
     unsigned int wHeight = 800;
     const char wTitle[] = "Exhibition at Louvre";
-    //window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL);
+
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-    // Calculate window position to center it on the monitor
     int xPos = (mode->width - wWidth) / 2;
     int yPos = (mode->height - wHeight) / 2;
 
-    // Create a window and set its position
     window = glfwCreateWindow(wWidth, wHeight, wTitle, NULL, NULL);
     glfwSetWindowPos(window, xPos, yPos);
 
     if (window == NULL)
     {
-        std::cout << "Prozor nije napravljen! :(\n";
+        std::cout << "Window hasn't been created! :(\n";
         glfwTerminate();
         return 2;
     }
@@ -60,16 +57,11 @@ int main(void)
 
     if (glewInit() != GLEW_OK)
     {
-        std::cout << "GLEW nije mogao da se ucita! :'(\n";
+        std::cout << "Couldn't load GLEW! :'(\n";
         return 3;
     }
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROMJENLJIVE I BAFERI +++++++++++++++++++++++++++++++++++++++++++++++++
-
-    unsigned int VAO[12];
-    glGenVertexArrays(12, VAO);
-    unsigned int VBO[12];
-    glGenBuffers(12, VBO);
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ BUFFERS AND VARIABLES +++++++++++++++++++++++++++++++++++++++++++++++++
 
     float white = 255 / 255.0;
 
@@ -93,52 +85,45 @@ int main(void)
     float green_g = 255 / 255.0;
     float green_b = 128 / 255.0;
 
+    unsigned int VAO[12];
+    glGenVertexArrays(12, VAO);
+    unsigned int VBO[12];
+    glGenBuffers(12, VBO);
+
+    unsigned int textureStride = (2 + 2) * sizeof(float);
+
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    unsigned int nameAndSurnameShader = createShader("basic_texture.vert", "basic_texture.frag"); 
-
-    //float vertices[] =
-    //{   //X    Y      S    T 
-    //    -0.2, -0.55,  0.0, 0.0,
-    //    0.2, -0.55,   1.0, 0.0,
-    //    -0.2, -0.4,    0.0, 1.0,
-    //    0.2, -0.4,    1.0, 1.0,//trece tjeme
-    //};
-
-    float vertices[] =
+    float nameTextureVertices[] =
     {   //X    Y      S    T 
         -0.63, -0.45, 0.0, 1.0,
         0.72, -0.45, 1.0, 1.0,
         -0.63, -0.8, 0.0, 0.0,
-        0.72, -0.8, 1.0, 0.0,//trece tjeme
+        0.72, -0.8, 1.0, 0.0
     };
-    unsigned int nameTextureStride = (2 + 2) * sizeof(float); 
+    
 
     glBindVertexArray(VAO[0]); 
     glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
+    glBufferData(GL_ARRAY_BUFFER, sizeof(nameTextureVertices), nameTextureVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)0);
     glEnableVertexAttribArray(0); 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned checkerTexture = loadImageToTexture("res/name_texture.png");
-    glBindTexture(GL_TEXTURE_2D, checkerTexture);
+    unsigned nameTexture = loadImageToTexture("res/name_texture.png");
+    glBindTexture(GL_TEXTURE_2D, nameTexture);
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
-    unsigned uTexLoc = glGetUniformLocation(nameAndSurnameShader, "uTex");
-    /*glUniform1i(uTexLoc, 0);*/
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROGRESS +++++++++++++++++++++++++++++++++++++++++++++++++
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PROGRESS BAR +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    unsigned int progressBarShader = createShader("basic.vert", "progress_bar.frag");
-
-    unsigned int stride = 5 * sizeof(float);
+    unsigned int coordsRGBStride = 5 * sizeof(float);
 
     float progressBarOuterVertices[] = {
         0.1, -0.76,     white, white, white,
@@ -150,9 +135,10 @@ int main(void)
     glBindVertexArray(VAO[10]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[10]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(progressBarOuterVertices), progressBarOuterVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     float progressBarInnerVertices[] = {
@@ -171,29 +157,29 @@ int main(void)
     glBindVertexArray(VAO[11]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[11]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(progressBarInnerVertices), progressBarInnerVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, stride, (void*)0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ MONA LISA +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    float verticess[] =
+    float monaLisaVertices[] =
     {   //X    Y      S    T 
         0.5, -0.85, 1.0, 0.0,
         -0.75, -0.85, 0.0, 0.0,
         0.5, 0.8, 1.0, 1.0,
-        -0.75, 0.8, 0.0, 1.0,//trece tjeme
+        -0.75, 0.8, 0.0, 1.0,
     };
-    //unsigned int nameTextureStride = (2 + 2) * sizeof(float);
 
     glBindVertexArray(VAO[6]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[6]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticess), verticess, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(monaLisaVertices), monaLisaVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     unsigned monaLisaTexture = loadImageToTexture("res/mona_lisa.jpg");
@@ -205,24 +191,23 @@ int main(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 1);
 
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ SPLAV MEDUZE +++++++++++++++++++++++++++++++++++++++++++++++++
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ MEDUSA +++++++++++++++++++++++++++++++++++++++++++++++++
 
     float medusaVertices[] =
     {   //X    Y      S    T 
        0.5, -0.15, 1.0, 0.0,
         -0.75, -0.15, 0.0, 0.0,
         0.5, 0.55, 1.0, 1.0,
-        -0.75, 0.55, 0.0, 1.0, ///trece tjeme
+        -0.75, 0.55, 0.0, 1.0, 
     };
-    //unsigned int nameTextureStride = (2 + 2) * sizeof(float);
 
     glBindVertexArray(VAO[7]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[7]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(medusaVertices), medusaVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     unsigned medusaTexture = loadImageToTexture("res/medusaa.jpg");
@@ -241,17 +226,16 @@ int main(void)
        0.7, -0.5, 1.0, 0.0,
         -0.65, -0.5, 0.0, 0.0,
         0.7, 0.4, 1.0, 1.0,
-        -0.65, 0.4, 0.0, 1.0, ///trece tjeme
+        -0.65, 0.4, 0.0, 1.0,
     };
-    //unsigned int nameTextureStride = (2 + 2) * sizeof(float);
 
     glBindVertexArray(VAO[8]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[8]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(napoleonVertices), napoleonVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     unsigned napoleonTexture = loadImageToTexture("res/napoleon.jpg");
@@ -270,17 +254,16 @@ int main(void)
        0.7, -0.15, 1.0, 0.0,
         -0.65, -0.15, 0.0, 0.0,
         0.7, 0.85, 1.0, 1.0,
-        -0.65, 0.85, 0.0, 1.0, ///trece tjeme
+        -0.65, 0.85, 0.0, 1.0,
     };
-    //unsigned int nameTextureStride = (2 + 2) * sizeof(float);
 
     glBindVertexArray(VAO[9]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[9]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(freedomVertices), freedomVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, nameTextureStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, textureStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     unsigned freedomTexture = loadImageToTexture("res/liberty.jpg");
@@ -291,14 +274,8 @@ int main(void)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 4);
-    //unsigned uTexLoc2 = glGetUniformLocation(nameAndSurnameShader, "uTex");
-    //glUniform1i(uTexLoc, 1);
-
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON +++++++++++++++++++++++++++++++++++++++++++++++++
-
-    unsigned int buttonShader = createShader("basic.vert", "uniform_color.frag");
-    unsigned int basicShader = createShader("basic.vert", "basic.frag");
 
     float circle[CRES * 2 + 4];
     float r = 0.15;
@@ -319,16 +296,7 @@ int main(void)
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    unsigned int uColorLoc = glGetUniformLocation(buttonShader, "color");
-    if (uColorLoc == -1) {
-        std::cerr << "Error: Unable to find the uniform location for 'color'" << std::endl;
-    }
-    glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
-    bool colorUpdated = false;
-
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ FRAMES +++++++++++++++++++++++++++++++++++++++++++++++++
-
-    unsigned int frameStride = 5 * sizeof(float);
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ YELLOW FRAME +++++++++++++++++++++++++++++++++++++++++++++++++
 
     float yellowFrameVertices[] = {
         0.55, 0.85,     yellow_r, yellow_g, yellow_b,
@@ -346,10 +314,13 @@ int main(void)
     glBindVertexArray(VAO[2]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(yellowFrameVertices), yellowFrameVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RED FRAME +++++++++++++++++++++++++++++++++++++++++++++++++
 
     float redFrameVertices[] = {
         0.55, 0.6,     red_r, red_g, red_b,
@@ -364,15 +335,16 @@ int main(void)
        0.5, 0.55,      red_r, red_g, red_b,
     };
 
-
-
     glBindVertexArray(VAO[3]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[3]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(redFrameVertices), redFrameVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ BLUE FRAME +++++++++++++++++++++++++++++++++++++++++++++++++
 
     float blueFrameVertices[] = {
           0.75, 0.45,     blue_r, blue_g, blue_b,
@@ -390,10 +362,13 @@ int main(void)
     glBindVertexArray(VAO[4]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[4]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(blueFrameVertices), blueFrameVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ PURPLE FRAME +++++++++++++++++++++++++++++++++++++++++++++++++
 
     float purpleFrameVertices[] = {
           0.75, 0.9,     purple_r, purple_g, purple_b,
@@ -408,36 +383,46 @@ int main(void)
          0.7, 0.85,      purple_r, purple_g, purple_b,
     };
 
-    
-
     glBindVertexArray(VAO[5]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[5]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(purpleFrameVertices), purpleFrameVertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, frameStride, (void*)0);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, frameStride, (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, coordsRGBStride, (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    /*glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);*/
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ SHADERS, UNIFORMS AND VARIABLES +++++++++++++++++++++++++++++++++++++++++++++++++
 
+    unsigned int basicTextureShader = createShader("basic_texture.vert", "basic_texture.frag");
+    unsigned int progressBarShader = createShader("basic.vert", "progress_bar.frag");
+    unsigned int buttonShader = createShader("basic.vert", "uniform_color.frag");
+    unsigned int basicShader = createShader("basic.vert", "basic.frag");
     unsigned int rotationShader = createShader("frame_rotation.vert", "frame_rotation.frag");
+
+    unsigned uTexLoc = glGetUniformLocation(basicTextureShader, "uTex");
     unsigned int time = glGetUniformLocation(rotationShader, "time");
     unsigned int timeProgress = glGetUniformLocation(progressBarShader, "time");
     unsigned int frameType = glGetUniformLocation(rotationShader, "type");
     unsigned int uPosLoc = glGetUniformLocation(rotationShader, "uPos");
-    float rrr = 0.1;      //Poluprecnik kruznice po kojoj se trougao krece, mora biti manji od najmanje apsolutne vrednosti y koordinate temena
+    unsigned int uColorLoc = glGetUniformLocation(buttonShader, "color");
+
+    bool buttonClicked = false;
     float rotationSpeed = 0.7;
     int progressLevel = 4;
     bool zKeyPressed = false;
     bool iKeyPressed = false;
     int isImageMoving = 1;
-    glClearColor(0.9, 0.9, 0.9, 1.0);
-    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP - PETLJA ZA CRTANJE +++++++++++++++++++++++++++++++++++++++++++++++++
 
-    while (!glfwWindowShouldClose(window)) //Beskonacna petlja iz koje izlazimo tek kada prozor treba da se zatvori
+    glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
+    glClearColor(0.9, 0.9, 0.9, 1.0);
+
+    // ++++++++++++++++++++++++++++++++++++++++++++++++++++++ RENDER LOOP +++++++++++++++++++++++++++++++++++++++++++++++++
+
+    while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+
         glViewport(0, 0, wWidth, wHeight);
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -445,53 +430,51 @@ int main(void)
             glfwSetWindowShouldClose(window, GL_TRUE);
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            colorUpdated = true;
+            buttonClicked = true;
             isImageMoving = 0;
         }
         if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-            colorUpdated = false;
+            buttonClicked = false;
             isImageMoving = 1;
         }
         if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && !zKeyPressed && progressLevel < 10) {
             progressLevel += 2;
             rotationSpeed += 0.5;
-            zKeyPressed = true;  // Set the flag to true to indicate that the key is pressed
+            zKeyPressed = true; 
         }
         else if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_RELEASE) {
-            zKeyPressed = false;  // Reset the flag when the key is released
+            zKeyPressed = false;
         }
 
         if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && !iKeyPressed && progressLevel > 4) {
             progressLevel -= 2;
             rotationSpeed -= 0.5;
-            iKeyPressed = true;  // Set the flag to true to indicate that the key is pressed
+            iKeyPressed = true;
         }
         else if (glfwGetKey(window, GLFW_KEY_I) == GLFW_RELEASE) {
-            iKeyPressed = false;  // Reset the flag when the key is released
+            iKeyPressed = false;
         }
 
         glClear(GL_COLOR_BUFFER_BIT);
 
         // +++++++++++++++++++++++++++++++++++++++++++++++++++ NAME TEXTURE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        glUseProgram(nameAndSurnameShader);
-        glBindVertexArray(VAO[0]);
         glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, checkerTexture);
+        glUseProgram(basicTextureShader);
         glUniform1i(uTexLoc, 0);
         glUniform2f(uPosLoc, 0, 0);
 
+        glBindVertexArray(VAO[0]);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, nameTexture);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        /*
-        glBindTexture(GL_TEXTURE_2D, 0);*/
 
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON COLOR CHANGE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
         glUseProgram(buttonShader);
-        if (!colorUpdated) {
+        if (!buttonClicked) {
             glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
         }
         else {
@@ -501,21 +484,28 @@ int main(void)
         glViewport(0, 0, wWidth / 2, wHeight / 2);
         glDrawArrays(GL_TRIANGLE_FAN, 0, sizeof(circle) / (2 * sizeof(float)));
 
-        glUseProgram(nameAndSurnameShader);
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ PROGRESS BAR ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        glUseProgram(basicTextureShader);
+
         glViewport(0, 0, wWidth, wHeight);
         glBindVertexArray(VAO[10]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glUseProgram(progressBarShader);
-        float t = abs(sin(glfwGetTime()));
-        /*if (t < 0)
-            t = 0;*/
-        glUniform1f(timeProgress, t);
+
+        glUniform1f(timeProgress, abs(sin(glfwGetTime())));
         glBindVertexArray(VAO[11]);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, progressLevel);
 
-        glUseProgram(nameAndSurnameShader);
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ TEXTURES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        glUseProgram(basicTextureShader);
+
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ MONA LISA ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+
         glBindVertexArray(VAO[6]);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, monaLisaTexture);
@@ -523,7 +513,10 @@ int main(void)
         glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ MEDUSA ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
+
         glBindVertexArray(VAO[7]);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, medusaTexture);
@@ -531,7 +524,10 @@ int main(void)
         glUniform2f(uPosLoc, isImageMoving * 0.2 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.2 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ FREEDOM ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glViewport(0, 0, wWidth / 2, wHeight / 2);
+
         glBindVertexArray(VAO[9]);
         glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_2D, freedomTexture);
@@ -539,7 +535,10 @@ int main(void)
         glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ NAPOLEON ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+
         glBindVertexArray(VAO[8]);
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, napoleonTexture);
@@ -547,8 +546,9 @@ int main(void)
         glUniform2f(uPosLoc, isImageMoving * 0.2 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.2 * (sin(glfwGetTime() * rotationSpeed)));
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BUTTON CLICK ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        if (!colorUpdated) {
+        if (!buttonClicked) {
             glUniform4f(uColorLoc, 1.0f, 1.0f, 0.0f, 1.0f);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             glClearColor(0.9, 0.9, 0.9, 1.0);
@@ -559,58 +559,69 @@ int main(void)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }        
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ FRAMES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glUseProgram(rotationShader);
         glUniform1f(time, abs(sin(glfwGetTime())));
 
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ YELLOW FRAME ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         glViewport(wWidth / 2 + 1, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+
         glUniform1f(frameType, 1);
         glBindVertexArray(VAO[2]);
         glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / coordsRGBStride);
+
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ RED FRAME ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         glViewport(wWidth / 2 + 1, 0, wWidth / 2, wHeight / 2);
+
         glUniform1f(frameType, 2);
         glBindVertexArray(VAO[3]);
         glUniform2f(uPosLoc, isImageMoving * 0.2* cos(glfwGetTime()* rotationSpeed), isImageMoving * 0.2* (sin(glfwGetTime()* rotationSpeed)));
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(redFrameVertices) / frameStride);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(redFrameVertices) / coordsRGBStride);
+
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ BLUE FRAME ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         glViewport(0, wHeight / 2 + 1, wWidth / 2, wHeight / 2);
+
         glBindVertexArray(VAO[4]);
         glUniform1f(frameType, 3);
         glUniform2f(uPosLoc, isImageMoving * 0.2 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.2 * (sin(glfwGetTime() * rotationSpeed)));
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(yellowFrameVertices) / frameStride);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(blueFrameVertices) / coordsRGBStride);
+
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ PURPLE FRAME ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         glViewport(0, 0, wWidth / 2, wHeight / 2);
+
         glBindVertexArray(VAO[5]);
         glUniform1f(frameType, 4);
         glUniform2f(uPosLoc, isImageMoving * 0.05 * cos(glfwGetTime() * rotationSpeed), isImageMoving * 0.05 * (sin(glfwGetTime() * rotationSpeed)));
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(blueFrameVertices) / frameStride);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, sizeof(purpleFrameVertices) / coordsRGBStride);
 
-        glActiveTexture(GL_TEXTURE0);
+        // +++++++++++++++++++++++++++++++++++++++++++++++++++ RESET TO DEFAULT ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glActiveTexture(GL_TEXTURE0);
         glUniform2f(uPosLoc, 0, 0);
-
-        /*glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-        glUseProgram(0);*/
 
         glfwSwapBuffers(window);
     }
 
     glDeleteBuffers(10, VBO);
-    glDeleteTextures(1, &checkerTexture);
+    glDeleteTextures(1, &nameTexture);
     glDeleteTextures(1, &monaLisaTexture);
     glDeleteTextures(1, &napoleonTexture);
     glDeleteTextures(1, &freedomTexture);
     glDeleteTextures(1, &medusaTexture);
 
-
     glDeleteVertexArrays(10, VAO);
-    glDeleteProgram(nameAndSurnameShader);
+    glDeleteProgram(basicTextureShader);
     glDeleteProgram(buttonShader);
     glDeleteProgram(progressBarShader);
     glDeleteProgram(basicShader);
+    glDeleteProgram(rotationShader);
     glfwTerminate();
 
     return 0;
